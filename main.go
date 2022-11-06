@@ -8,7 +8,7 @@ import (
 func main() {
 	urls := []string{"https://www.thepaper.cn/", "https://www.douban.com/group/szsh"}
 	for _, url := range urls {
-		body, err := collect.Get(url)
+		body, err := collect.GetByBrowserFetch(url)
 		if err != nil {
 			fmt.Println("get content failed:%v", err)
 		}
