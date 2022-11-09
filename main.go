@@ -5,6 +5,7 @@ import (
 	"github.com/dreamerjackson/newbiecrawler/collect"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 var autoRe = regexp.MustCompile(`<span class="pl"> 作者</span>:[\d\D]*?<a.*?>([^<]+)</a>`)
@@ -30,6 +31,17 @@ func (b Bookdetail) String() string {
 }
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	before := time.Now()
+	defer func() {
+		fmt.Println(time.Since(before).Milliseconds())
+	}()
+
 	urls := []string{"https://book.douban.com/subject/36104107/"}
 	for _, url := range urls {
 		body, err := collect.GetByBrowserFetch(url)
@@ -45,6 +57,7 @@ func main() {
 }
 
 func parseContent(content []byte) {
+
 	bookdetail := Bookdetail{}
 	bookdetail.Author = ExtraString(content, autoRe)
 	page, err := strconv.Atoi(ExtraString(content, pageRe))
@@ -56,7 +69,6 @@ func parseContent(content []byte) {
 	bookdetail.Into = ExtraString(content, intoRe)
 	bookdetail.Score = ExtraString(content, scoreRe)
 	bookdetail.Price = ExtraString(content, priceRe)
-	fmt.Println(bookdetail)
 }
 
 func ExtraString(contents []byte, re *regexp.Regexp) string {
