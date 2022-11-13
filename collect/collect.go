@@ -11,7 +11,13 @@ import (
 	"net/http"
 )
 
-func Get(url string) ([]byte, error) {
+type Fetcher interface {
+	Get(url string) ([]byte, error)
+}
+
+type BaseFetch struct{}
+
+func (f *BaseFetch) Get(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -32,8 +38,10 @@ func Get(url string) ([]byte, error) {
 	return ioutil.ReadAll(utf8Reader)
 }
 
+type BrowserFetch struct{}
+
 // 模拟浏览器访问
-func GetByBrowserFetch(url string) ([]byte, error) {
+func (f *BrowserFetch) Get(url string) ([]byte, error) {
 
 	client := &http.Client{}
 
