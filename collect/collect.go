@@ -3,12 +3,14 @@ package collect
 import (
 	"bufio"
 	"fmt"
+	"github.com/dreamerjackson/newbiecrawler/proxy"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Fetcher interface {
@@ -38,12 +40,20 @@ func (f *BaseFetch) Get(url string) ([]byte, error) {
 	return ioutil.ReadAll(utf8Reader)
 }
 
-type BrowserFetch struct{}
+type BrowserFetch struct {
+	Timeout time.Duration
+	Proxy   proxy.ProxyFunc
+}
 
 // 模拟浏览器访问
-func (f *BrowserFetch) Get(url string) ([]byte, error) {
-
+func (b *BrowserFetch) Get(url string) ([]byte, error) {
 	client := &http.Client{}
+
+	if b.Proxy != nil {
+		transport := http.DefaultTransport.(*http.Transport)
+		transport.Proxy = b.Proxy
+		client.Transport = transport
+	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
