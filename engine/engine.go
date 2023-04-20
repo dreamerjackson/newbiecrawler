@@ -6,7 +6,18 @@ import (
 )
 
 type Crawler struct {
-	Fetcher collect.Fetcher
+	out       chan collect.ParseResult
+	Fetcher   collect.Fetcher
+	scheduler Scheduler
+}
+
+func NewCrawler(f collect.Fetcher) *Crawler {
+	c := &Crawler{}
+
+	c.Fetcher = f
+	c.scheduler = NewSchedule()
+	c.out = make(chan collect.ParseResult)
+	return c
 }
 
 func (c *Crawler) Start(reqs []*collect.Request) {
@@ -26,6 +37,38 @@ func (c *Crawler) Start(reqs []*collect.Request) {
 			for _, item := range results.Items {
 				fmt.Println(item)
 			}
+		}
+	}
+}
+
+func (c *Crawler) CreateWork() {
+
+	for {
+		req := c.scheduler.Pull()
+		body, err := c.Fetcher.Get(req.Url)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		if len(body) < 6000 {
+			fmt.Println("can't fetch")
+			continue
+		}
+		result := req.ParseFunc(body, req)
+
+		if len(result.Requesrts) > 0 {
+			go c.scheduler.Push(result.Requesrts...)
+		}
+
+		c.out <- result
+	}
+}
+
+func (c *Crawler) HandleResult() {
+	for result := range c.out {
+		for _, item := range result.Items {
+			fmt.Println(item)
 		}
 	}
 }

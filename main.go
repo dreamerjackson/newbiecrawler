@@ -30,7 +30,7 @@ func main() {
 	f := &collect.BrowserFetch{
 		Proxy: p,
 	}
-	c := engine.Crawler{f}
+	c := engine.NewCrawler(f)
 	c.Start([]*collect.Request{
 		{
 			Url:       "https://book.douban.com",

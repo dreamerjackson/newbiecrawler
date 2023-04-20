@@ -35,7 +35,7 @@ func ParseBookList(contents []byte, url *collect.Request) collect.ParseResult {
 	matches := re.FindAllSubmatch(contents, -1)
 	result := collect.ParseResult{}
 
-	for _, m := range matches[:1] {
+	for _, m := range matches[:2] {
 		u := string(m[1])
 		result.Requesrts = append(
 			result.Requesrts, &collect.Request{
