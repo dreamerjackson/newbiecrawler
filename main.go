@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/dreamerjackson/newbiecrawler/collect"
 	"github.com/dreamerjackson/newbiecrawler/engine"
+	"github.com/dreamerjackson/newbiecrawler/parse"
 	"github.com/dreamerjackson/newbiecrawler/proxy"
 	"time"
 )
@@ -26,10 +27,15 @@ func main() {
 		fmt.Println("RoundRobinProxySwitcher failed")
 	}
 
-	seeds := []string{"https://book.douban.com/subject/36104107/"}
 	f := &collect.BrowserFetch{
 		Proxy: p,
 	}
 	c := engine.Crawler{f}
-	c.Start(seeds)
+	c.Start([]*collect.Request{
+		{
+			Url:       "https://book.douban.com",
+			Cookie:    "",
+			ParseFunc: parse.ParseURL,
+		},
+	})
 }
