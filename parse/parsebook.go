@@ -2,6 +2,7 @@ package parse
 
 import (
 	"github.com/dreamerjackson/newbiecrawler/collect"
+	"github.com/dreamerjackson/newbiecrawler/db"
 	"regexp"
 	"strconv"
 )
@@ -41,7 +42,9 @@ func ParseBookList(contents []byte, url *collect.Request) collect.ParseResult {
 			result.Requesrts, &collect.Request{
 				Url: u,
 				ParseFunc: func(c []byte, request *collect.Request) collect.ParseResult {
-					return GetContent(c, nil)
+					return GetContent(c, &collect.Request{
+						Temp: string(m[2]),
+					})
 				},
 			})
 	}
@@ -55,22 +58,11 @@ var priceRe = regexp.MustCompile(`<span class="pl">定价:</span>([^<]+)<br/>`)
 var scoreRe = regexp.MustCompile(`<strong class="ll rating_num " property="v:average">([^<]+)</strong>`)
 var intoRe = regexp.MustCompile(`<div class="intro">[\d\D]*?<p>([^<]+)</p></div>`)
 
-type Bookdetail struct {
-	BookName  string
-	Author    string
-	Publicer  string
-	Bookpages int
-	Price     string
-	Score     string
-	Into      string
-}
+func GetContent(content []byte, u *collect.Request) collect.ParseResult {
+	bookdetail := db.Bookdetail{}
 
-func (b Bookdetail) String() string {
-	return "书籍名字:" + b.BookName + " 作者 :" + b.Author + " 出版社" + b.Publicer + " 书籍页数：" + strconv.Itoa(b.Bookpages) + " 价格：" + b.Price + " 得分" + b.Score + " \n简介:" + b.Into
-}
+	bookdetail.BookName = u.Temp
 
-func GetContent(content []byte, url *collect.Request) collect.ParseResult {
-	bookdetail := Bookdetail{}
 	bookdetail.Author = ExtraString(content, autoRe)
 	page, err := strconv.Atoi(ExtraString(content, pageRe))
 

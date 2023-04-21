@@ -3,42 +3,42 @@ package engine
 import (
 	"fmt"
 	"github.com/dreamerjackson/newbiecrawler/collect"
+	"github.com/dreamerjackson/newbiecrawler/db"
 )
 
 type Crawler struct {
 	out       chan collect.ParseResult
 	Fetcher   collect.Fetcher
 	scheduler Scheduler
+	db        *db.MysqlDB
 }
 
 func NewCrawler(f collect.Fetcher) *Crawler {
 	c := &Crawler{}
-
 	c.Fetcher = f
 	c.scheduler = NewSchedule()
 	c.out = make(chan collect.ParseResult)
+	d, err := db.OpenDB()
+
+	err = d.InitTable(db.Bookdetail{})
+	if err != nil {
+		panic(err)
+	}
+	c.db = d
+	if err != nil {
+		panic(err)
+	}
 	return c
 }
 
 func (c *Crawler) Start(reqs []*collect.Request) {
-	for i := 0; i < len(reqs); i++ {
-		r := reqs[i]
-		body, err := c.Fetcher.Get(r.Url)
-		if err != nil {
-			fmt.Println("get content failed:%v", err)
-		}
-		if len(body) < 4096 {
-			fmt.Println("get content failed: length body < 4096")
-		} else {
-			results := r.ParseFunc(body, r)
-			if results.Requesrts != nil {
-				reqs = append(reqs, results.Requesrts...)
-			}
-			for _, item := range results.Items {
-				fmt.Println(item)
-			}
-		}
+	go c.scheduler.Schedule()
+	c.scheduler.Push(reqs...)
+
+	for i := 0; i < 5; i++ {
+		go c.CreateWork()
 	}
+	c.HandleResult()
 }
 
 func (c *Crawler) CreateWork() {
@@ -68,7 +68,15 @@ func (c *Crawler) CreateWork() {
 func (c *Crawler) HandleResult() {
 	for result := range c.out {
 		for _, item := range result.Items {
-			fmt.Println(item)
+			book, ok := item.(db.Bookdetail)
+			if ok {
+				err := c.db.Insert(book)
+				if err != nil {
+					fmt.Println("Error inserting book:", err)
+					continue
+				}
+				fmt.Println("Inserted book:", book)
+			}
 		}
 	}
 }
